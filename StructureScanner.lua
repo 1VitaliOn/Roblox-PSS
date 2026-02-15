@@ -1,5 +1,5 @@
 -- ===================================================
--- ПЛАГИН: Structure Scanner for AI (Улучшенный вывод)
+-- ПЛАГИН: Structure Scanner for AI (С РАБОЧИМ КОПИРОВАНИЕМ)
 -- ===================================================
 
 -- 1. ПОДКЛЮЧАЕМ НЕОБХОДИМЫЕ СЕРВИСЫ
@@ -23,8 +23,8 @@ local widgetInfo = DockWidgetPluginGuiInfo.new(
 	Enum.InitialDockState.Float,
 	true,
 	false,
-	500,   -- Ширина окна (увеличил для удобства)
-	400,   -- Высота окна
+	500,   -- Ширина окна
+	450,   -- Высота окна (чуть больше для подсказки)
 	300,
 	250
 )
@@ -43,7 +43,7 @@ mainFrame.Parent = widget
 
 -- Текстовое поле
 local textBox = Instance.new("TextBox")
-textBox.Size = UDim2.new(1, -20, 1, -60)
+textBox.Size = UDim2.new(1, -20, 1, -90) -- Больше места для подсказки снизу
 textBox.Position = UDim2.new(0, 10, 0, 10)
 textBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 textBox.TextColor3 = Color3.fromRGB(220, 220, 220)
@@ -59,25 +59,48 @@ textBox.Parent = mainFrame
 
 -- Кнопка "Scan Project"
 local scanButton = Instance.new("TextButton")
-scanButton.Size = UDim2.new(0.5, -15, 0, 30)
-scanButton.Position = UDim2.new(0, 10, 1, -40)
+scanButton.Size = UDim2.new(0.33, -10, 0, 30)
+scanButton.Position = UDim2.new(0, 10, 1, -70)
 scanButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
 scanButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 scanButton.Text = "Scan Project"
 scanButton.Font = Enum.Font.GothamBold
-scanButton.TextSize = 16
+scanButton.TextSize = 14
 scanButton.Parent = mainFrame
 
--- Кнопка "Copy to Clipboard"
+-- Кнопка "Copy" (просто выделяет текст)
 local copyButton = Instance.new("TextButton")
-copyButton.Size = UDim2.new(0.5, -15, 0, 30)
-copyButton.Position = UDim2.new(0.5, 5, 1, -40)
-copyButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+copyButton.Size = UDim2.new(0.33, -10, 0, 30)
+copyButton.Position = UDim2.new(0.33, 10, 1, -70)
+copyButton.BackgroundColor3 = Color3.fromRGB(255, 140, 0) -- Оранжевый
 copyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-copyButton.Text = "Copy to Clipboard"
+copyButton.Text = "Выделить текст"
 copyButton.Font = Enum.Font.GothamBold
-copyButton.TextSize = 16
+copyButton.TextSize = 14
 copyButton.Parent = mainFrame
+
+-- Кнопка "Copy to Clipboard" с понятной инструкцией
+local copyInstructionsBtn = Instance.new("TextButton")
+copyInstructionsBtn.Size = UDim2.new(0.33, -10, 0, 30)
+copyInstructionsBtn.Position = UDim2.new(0.66, 10, 1, -70)
+copyInstructionsBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+copyInstructionsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+copyInstructionsBtn.Text = "❓ Как копировать"
+copyInstructionsBtn.Font = Enum.Font.GothamBold
+copyInstructionsBtn.TextSize = 14
+copyInstructionsBtn.Parent = mainFrame
+
+-- Текстовая подсказка снизу
+local hintLabel = Instance.new("TextLabel")
+hintLabel.Size = UDim2.new(1, -20, 0, 20)
+hintLabel.Position = UDim2.new(0, 10, 1, -30)
+hintLabel.BackgroundTransparency = 1
+hintLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+hintLabel.Text = "👉 Выдели текст и нажми Ctrl+C (Cmd+C на Mac) чтобы скопировать"
+hintLabel.Font = Enum.Font.Gotham
+hintLabel.TextSize = 12
+hintLabel.TextXAlignment = Enum.TextXAlignment.Center
+hintLabel.Parent = mainFrame
 
 -- ===================================================
 -- 5. УЛУЧШЕННАЯ ЛОГИКА СКАНИРОВАНИЯ
@@ -99,7 +122,6 @@ local function getProjectStructure()
 	-- Функция для получения красивого имени класса
 	local function getFriendlyClassName(obj)
 		local className = obj.ClassName
-		-- Сокращаем некоторые распространенные классы для читаемости
 		local friendlyNames = {
 			BasePart = "Part",
 			MeshPart = "Mesh",
@@ -107,8 +129,7 @@ local function getProjectStructure()
 			CylinderPart = "Cylinder",
 			BallPart = "Ball",
 			ModuleScript = "Module",
-			LocalScript = "Local",
-			Script = "Script"
+			LocalScript = "Local"
 		}
 		return friendlyNames[className] or className
 	end
@@ -117,12 +138,10 @@ local function getProjectStructure()
 	local function scanObject(obj, level, isLast, prefix)
 		prefix = prefix or ""
 		
-		-- Определяем символы для веток
 		local currentPrefix = prefix
 		local line = ""
 		
 		if level > 0 then
-			-- Для корневых элементов (сервисов) используем "├──" или "└──"
 			if isLast then
 				line = prefix .. "└── "
 				prefix = prefix .. "    "
@@ -132,17 +151,14 @@ local function getProjectStructure()
 			end
 		end
 		
-		-- Добавляем имя объекта и его тип
 		local objName = obj.Name
 		local objType = getFriendlyClassName(obj)
 		line = line .. objName .. " (" .. objType .. ")"
 		
 		table.insert(resultLines, line)
 		
-		-- Рекурсивно обрабатываем детей
 		local children = obj:GetChildren()
 		if #children > 0 then
-			-- Сортируем детей: папки и модели сначала, потом остальное
 			table.sort(children, function(a, b)
 				local aIsContainer = a:IsA("Folder") or a:IsA("Model")
 				local bIsContainer = b:IsA("Folder") or b:IsA("Model")
@@ -153,7 +169,6 @@ local function getProjectStructure()
 			end)
 			
 			for i, child in ipairs(children) do
-				-- Пропускаем служебные объекты с подчеркиванием в начале
 				if child.Name:sub(1, 1) ~= "_" then
 					scanObject(child, level + 1, i == #children, prefix)
 				end
@@ -161,7 +176,6 @@ local function getProjectStructure()
 		end
 	end
 	
-	-- Сканируем каждый корневой сервис
 	for i, service in ipairs(rootServices) do
 		if service then
 			scanObject(service, 1, i == #rootServices, "")
@@ -178,24 +192,42 @@ end
 scanButton.MouseButton1Click:Connect(function()
 	local structure = getProjectStructure()
 	textBox.Text = structure
+	-- Очищаем выделение после сканирования
+	textBox.CursorPosition = -1
 end)
 
--- Улучшенная кнопка копирования
+-- Кнопка "Выделить текст"
 copyButton.MouseButton1Click:Connect(function()
-	-- Способ 1: Через фокус и копирование (надежнее)
+	-- Устанавливаем фокус на текстовое поле
 	textBox:CaptureFocus()
+	-- Выделяем весь текст
 	textBox:SelectAll()
-	wait(0.1)
-	textBox:Copy()
 	
 	-- Визуальный фидбек
 	local originalColor = copyButton.BackgroundColor3
 	copyButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-	wait(0.3)
+	wait(0.2)
 	copyButton.BackgroundColor3 = originalColor
 	
-	-- Показываем сообщение что скопировано
-	textBox.Text = textBox.Text .. "\n\n✅ Скопировано в буфер обмена!"
+	-- Обновляем подсказку
+	hintLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+	hintLabel.Text = "✅ Текст выделен! Теперь нажми Ctrl+C (Cmd+C на Mac)"
+	wait(2)
+	hintLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+	hintLabel.Text = "👉 Выдели текст и нажми Ctrl+C (Cmd+C на Mac) чтобы скопировать"
+end)
+
+-- Кнопка с инструкцией
+copyInstructionsBtn.MouseButton1Click:Connect(function()
+	-- Показываем подробную инструкцию во всплывающем окне
+	local message = "КАК СКОПИРОВАТЬ СТРУКТУРУ:\n\n" ..
+					"1. Нажми кнопку 'Выделить текст'\n" ..
+					"2. Нажми Ctrl+C (на Windows/Linux)\n" ..
+					"   или Cmd+C (на Mac)\n\n" ..
+					"3. Вставь текст в чат с ИИ (Ctrl+V / Cmd+V)\n\n" ..
+					"❗ В Roblox Studio нет прямого доступа к буферу обмена, поэтому нужно использовать системные комбинации клавиш."
+	
+	textBox.Text = message
 end)
 
 -- ===================================================
@@ -210,4 +242,4 @@ plugin.Unloading:Connect(function()
 	widget:Destroy()
 end)
 
-print("✅ Structure Scanner Plugin с улучшенным выводом загружен!")
+print("✅ Structure Scanner Plugin с улучшенным копированием загружен!")
