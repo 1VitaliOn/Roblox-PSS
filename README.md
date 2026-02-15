@@ -7,7 +7,7 @@
   
   [![Roblox](https://img.shields.io/badge/Roblox-Studio-blue.svg)](https://www.roblox.com)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![Version](https://img.shields.io/badge/version-1.0.3-green.svg)](https://github.com/yourusername/roblox-structure-scanner)
+  [![Version](https://img.shields.io/badge/version-1.0.2-green.svg)](https://github.com/yourusername/roblox-structure-scanner)
 </div>
 
 ## ✨ Features
