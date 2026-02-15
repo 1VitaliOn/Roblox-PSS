@@ -1,7 +1,6 @@
 # 📁 Roblox Project Structure Scanner
 
 <div align="center">
-  <img src="https://tr.rbxcdn.com/38c6edcb50633730ff4cf3ac7a2c5eaf/150/150/Image/Png" alt="Plugin Icon" width="128" height="128">
   
   **A simple yet powerful plugin to scan your Roblox project and generate a clean, readable tree structure for AI assistants**
   
